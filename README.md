@@ -27,7 +27,13 @@ a. mvn clean test
 ## 3. How to run sample curl requests
 ```
 curl -X POST -H "Content-Type: application/json" 
--d '{"accountNumber": "0012250016005", "fromDate": "01.06.2020", "toDate" : "30.09.2020", "fromAmount": "110",
- "toAmount": "1000"}' \
+-d '{"accountNumber": "0012250016005", "fromDate": "01.06.2020", "toDate" : "30.09.2020",
+ "fromAmount": "110", "toAmount": "1000"}' \
+    http://admin:admin@localhost:8080/statements/v1/ -v
+```
+
+```
+curl -X POST -H "Content-Type: application/json" 
+ -d '{"accountNumber": "0012250016005"}' http://user:password@localhost:8080/statements/v1/ -v
 ```
 
