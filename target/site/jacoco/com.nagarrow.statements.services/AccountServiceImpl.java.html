@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">nagarro-test</a> &gt; <a href="index.source.html" class="el_package">com.nagarrow.statements.services</a> &gt; <span class="el_source">AccountServiceImpl.java</span></div><h1>AccountServiceImpl.java</h1><pre class="source lang-java linenums">package com.nagarrow.statements.services;
+
+
+import com.nagarrow.statements.dto.StatementFilter;
+import com.nagarrow.statements.dto.StatementRecord;
+import com.nagarrow.statements.exceptions.AccountServiceException;
+import com.nagarrow.statements.exceptions.AppError;
+import com.nagarrow.statements.model.Account;
+import com.nagarrow.statements.repository.AccountsRepository;
+import com.nagarrow.statements.util.DateUtils;
+import com.nagarrow.statements.util.HashingUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+@Service
+public class AccountServiceImpl implements AccountService {
+
+<span class="fc" id="L28">    private static final Logger LOGGER = LogManager.getLogger(AccountServiceImpl.class);</span>
+
+    private final AccountsRepository accountsRepository;
+
+<span class="fc" id="L32">    public AccountServiceImpl(@Autowired AccountsRepository accountsRepository) {</span>
+<span class="fc" id="L33">        this.accountsRepository = accountsRepository;</span>
+<span class="fc" id="L34">    }</span>
+
+    @Override
+    public List&lt;StatementRecord&gt; searchStatements(StatementFilter filter) {
+
+<span class="fc" id="L39">        Optional&lt;Account&gt; account = accountsRepository.findAccount(filter);</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if(!account.isPresent()) {</span>
+<span class="nc" id="L41">            LOGGER.warn(&quot;Account not found. {}&quot;, filter.getAccountNumber());</span>
+<span class="nc" id="L42">            throw new AccountServiceException(AppError.ACCOUNT_MOT_FOUND);</span>
+        }
+<span class="fc" id="L44">        List&lt;StatementRecord&gt; statementRecords = accountsRepository</span>
+<span class="fc" id="L45">                .searchStatements(filter);</span>
+<span class="fc" id="L46">        return filterResults(statementRecords, filter);</span>
+    }
+
+    private List&lt;StatementRecord&gt; filterResults(List&lt;StatementRecord&gt; statements, StatementFilter filter){
+<span class="fc" id="L50">        final Predicate&lt;StatementRecord&gt; amountPredicate = getAmountPredicate(filter);</span>
+<span class="fc" id="L51">        final Predicate&lt;StatementRecord&gt; datePredicate = getDatePredicate(filter);</span>
+<span class="fc" id="L52">        return statements</span>
+<span class="fc" id="L53">                .stream()</span>
+<span class="fc" id="L54">                .filter(amountPredicate)</span>
+<span class="fc" id="L55">                .filter(datePredicate)</span>
+<span class="fc" id="L56">                .map(statementRecord -&gt; {</span>
+<span class="fc" id="L57">                    statementRecord</span>
+<span class="fc" id="L58">                            .setMaskedAccountNumber(HashingUtils.generateHashCode(statementRecord.getMaskedAccountNumber()));</span>
+<span class="fc" id="L59">                    return  statementRecord;</span>
+                })
+<span class="fc" id="L61">                .collect(Collectors.toList());</span>
+    }
+
+    private Predicate&lt;StatementRecord&gt; getDatePredicate(StatementFilter filter) {
+<span class="fc" id="L65">        final Predicate&lt;StatementRecord&gt; datePredicate = statement -&gt; {</span>
+<span class="fc" id="L66">            String fromDate = filter.getFromDate();</span>
+<span class="fc" id="L67">            String toDate = filter.getToDate();</span>
+<span class="pc bpc" id="L68" title="1 of 4 branches missed.">            if (Objects.isNull(fromDate) || Objects.isNull(toDate)) {</span>
+<span class="fc" id="L69">                return true;</span>
+            }
+<span class="fc" id="L71">            Date fromDateObj = DateUtils.parseDate(fromDate);</span>
+<span class="fc" id="L72">            Date toDateObj = DateUtils.parseDate(toDate);</span>
+
+<span class="fc" id="L74">            Date statementDate = DateUtils.parseDate(statement.getDate());</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">            boolean greaterThanFloorValue = statementDate.compareTo(fromDateObj) &gt;= 0;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            boolean lessThanTheCapValue = statementDate.compareTo(toDateObj) &lt; 0;</span>
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">            return greaterThanFloorValue &amp;&amp; lessThanTheCapValue;</span>
+        };
+<span class="fc" id="L79">        return datePredicate;</span>
+    }
+
+    private Predicate&lt;StatementRecord&gt; getAmountPredicate(StatementFilter filter) {
+<span class="fc" id="L83">        final Predicate&lt;StatementRecord&gt; amountPredicate = statement -&gt; {</span>
+<span class="fc" id="L84">            String fromAmount = filter.getFromAmount();</span>
+<span class="fc" id="L85">            String toAmount = filter.getToAmount();</span>
+<span class="pc bpc" id="L86" title="1 of 4 branches missed.">            if (Objects.isNull(fromAmount) || Objects.isNull(toAmount)) {</span>
+<span class="fc" id="L87">                return true;</span>
+            }
+<span class="fc" id="L89">            BigDecimal fromAmountBigDecimal = new BigDecimal(fromAmount);</span>
+<span class="fc" id="L90">            BigDecimal toAmountBigDecimal = new BigDecimal(toAmount);</span>
+<span class="fc" id="L91">            BigDecimal amount = new BigDecimal(statement.getAmount());</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            boolean greaterThanFloorValue = amount.compareTo(fromAmountBigDecimal) &gt;= 0;</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            boolean lessThanTheCapValue = amount.compareTo(toAmountBigDecimal) &lt; 0;</span>
+<span class="fc bfc" id="L94" title="All 4 branches covered.">            return greaterThanFloorValue &amp;&amp; lessThanTheCapValue;</span>
+        };
+<span class="fc" id="L96">        return amountPredicate;</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

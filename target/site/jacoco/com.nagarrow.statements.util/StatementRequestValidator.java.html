@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StatementRequestValidator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">nagarro-test</a> &gt; <a href="index.source.html" class="el_package">com.nagarrow.statements.util</a> &gt; <span class="el_source">StatementRequestValidator.java</span></div><h1>StatementRequestValidator.java</h1><pre class="source lang-java linenums">package com.nagarrow.statements.util;
+
+import com.nagarrow.statements.dto.StatementFilter;
+import com.nagarrow.statements.exceptions.AccountServiceException;
+import com.nagarrow.statements.exceptions.AppError;
+import com.nagarrow.statements.security.UserRole;
+import org.apache.commons.lang.StringUtils;
+
+import java.util.Calendar;
+
+import static com.nagarrow.statements.exceptions.AppError.INVALID_AMOUNT_FILTER;
+
+public class StatementRequestValidator {
+
+    private StatementRequestValidator () {
+
+    }
+
+<span class="fc" id="L19">    private static int NINETY_DAYS = 90;</span>
+    public static StatementFilter validateRequestFilter(StatementFilter filter, UserRole userRole) {
+<span class="fc" id="L21">        String fromDate = filter.getFromDate();</span>
+<span class="fc" id="L22">        String toDate = filter.getToDate();</span>
+<span class="fc" id="L23">        String fromAmount = filter.getFromAmount();</span>
+<span class="fc" id="L24">        String toAmount = filter.getToAmount();</span>
+
+<span class="fc" id="L26">        validateRequestDateFilter(fromDate, toDate, userRole);</span>
+<span class="fc" id="L27">        validateAmountFilter(fromAmount, toAmount, userRole);</span>
+
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        if ( userRole.equals(UserRole.USER)) {</span>
+<span class="fc" id="L30">            String updateToDateQuery = DateUtils.getDateString(Calendar.getInstance().getTime());</span>
+<span class="fc" id="L31">            Calendar ninetyDaysBackCalender = Calendar.getInstance();</span>
+<span class="fc" id="L32">            ninetyDaysBackCalender.add(Calendar.DAY_OF_MONTH, NINETY_DAYS);</span>
+<span class="fc" id="L33">            String updatedFromDateQuery = DateUtils.getDateString(ninetyDaysBackCalender.getTime());</span>
+
+<span class="fc" id="L35">            filter.setFromDate(updateToDateQuery);</span>
+<span class="fc" id="L36">            filter.setToDate(updatedFromDateQuery);</span>
+        }
+<span class="fc" id="L38">        return filter;</span>
+    }
+
+    private static void validateAmountFilter(String fromAmount, String toAmount, UserRole userRole) {
+<span class="fc bfc" id="L42" title="All 4 branches covered.">        boolean amountFilterNotAvailable = StringUtils.isBlank(fromAmount) &amp;&amp; StringUtils.isBlank(toAmount);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (!amountFilterNotAvailable) {</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            if (userRole.equals(UserRole.USER)) {</span>
+<span class="fc" id="L45">                throw new AccountServiceException(AppError.UN_AUTHORIZED_OPERATION);</span>
+            }
+<span class="fc bfc" id="L47" title="All 4 branches covered.">            boolean validDateFilter = StringUtils.isNotBlank(fromAmount) &amp;&amp; StringUtils.isNotBlank(toAmount);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (!validDateFilter) {</span>
+<span class="fc" id="L49">                throw new AccountServiceException(INVALID_AMOUNT_FILTER);</span>
+            }
+        }
+<span class="fc" id="L52">    }</span>
+
+    private static void validateRequestDateFilter(String fromDate, String toDate, UserRole userRole) {
+<span class="fc bfc" id="L55" title="All 4 branches covered.">        boolean dateFilterNotAvailable = StringUtils.isBlank(fromDate) &amp;&amp; StringUtils.isBlank(toDate);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (!dateFilterNotAvailable) {</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            if (userRole.equals(UserRole.USER)) {</span>
+<span class="fc" id="L58">                throw new AccountServiceException(AppError.UN_AUTHORIZED_OPERATION);</span>
+            }
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">            boolean validDateFilter = StringUtils.isNotBlank(fromDate) &amp;&amp; StringUtils.isNotBlank(toDate);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (!validDateFilter) {</span>
+<span class="fc" id="L62">                throw new AccountServiceException(AppError.INVALID_DATE_FILTER);</span>
+            }
+        }
+
+<span class="fc" id="L66">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
